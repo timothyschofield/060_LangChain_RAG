@@ -31,6 +31,7 @@ from dotenv import load_dotenv
 
 CHROMA_PATH = "chroma"
 
+# The {context} and {question} are filled in by ChatPromptTemplate and its format() method
 PROMPT_TEMPLATE = """
 Answer the question based only on the following context:
 
@@ -40,7 +41,6 @@ Answer the question based only on the following context:
 
 Answer the question based on the above context: {question}
 """
-
 
 load_dotenv()
 openai.api_key = os.environ['OPENAI_API_KEY']
@@ -59,14 +59,15 @@ def main():
     query_text = "How does Alice meet the Mad Hatter?"
     number_of_answers = 3
     chroma_results = db.similarity_search_with_relevance_scores(query_text, k=number_of_answers)
+    # [(doc1, score1), (doc2, score2), (doc3, score3)]
+    
     
     if len(chroma_results) == 0 or chroma_results[0][1] < 0.7:
         print(f"Unable to find matching results.")
         return
 
-    # Get the blocks of relevant text back from Chroma and joins them together
+    # Get the blocks of relevant text back from Chroma and joins them together seperated by newlines and ---
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
-    
     
     
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
@@ -76,7 +77,7 @@ def main():
     print("#################################################")
 
     """
-    prompt='Human: 
+    'Human: 
     
     Answer the question based only on the following context:
     
@@ -115,10 +116,10 @@ def main():
     model = ChatOpenAI()
     response_text = model.predict(prompt)
 
+    sources = []
+    for doc, _score in chroma_results:
+        sources.append(doc.metadata)
 
-    sources = [doc.metadata.get("source", None) for doc, _score in chroma_results]
-    
-    
     formatted_response = f"Response from ChatOpenAI: {response_text}\nSources from Chroma: {sources}"
     
     print("#################################################")

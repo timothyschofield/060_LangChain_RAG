@@ -7,7 +7,6 @@ Date: 06 June 2024
 Run this program first to create the vector embedding of the data in "data/books/*.md"
 
 """
-
 from langchain_community.document_loaders import DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
@@ -55,7 +54,17 @@ def split_text(documents: list[Document]):
 
     document = chunks[10]
     print(document.page_content)
-    print(document.metadata)
+    """
+    So she was considering in her own mind (as well as she could, for the
+    hot day made her feel very sleepy and stupid), whether the pleasure of
+    making a daisy-chain would be worth the trouble of getting up and
+    picking the daisies, when suddenly a White Rabbit with pink eyes ran
+    close by her.
+    
+    289 characters
+    """
+    
+    print(document.metadata) # {'source': 'data/books/alice_in_wonderland.md', 'start_index': 1654}
 
     return chunks
 
@@ -66,12 +75,12 @@ def save_to_chroma(chunks: list[Document]):
         shutil.rmtree(CHROMA_PATH)
 
     # Create a new DB from the documents.
-    db = Chroma.from_documents(
-        chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH
-    )
-    db.persist()
+    db = Chroma.from_documents(chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH)
+    # db.persist()
     print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}.")
-
+    # Saved 801 chunks to chroma.
 
 if __name__ == "__main__":
     main()
+
+

@@ -16,17 +16,11 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 
 def main():
     
-    print("here1")
-    
     # Get embedding for a word.
     # uses text-embedding-ada-002
     embedding_function = OpenAIEmbeddings()
     
-    print(f"here2 {embedding_function}")
-    
     vector = embedding_function.embed_query("apple")
-    
-    print("here3")
     
     print(f"Vector for 'apple': {vector}")
     print(f"Vector length: {len(vector)}")
