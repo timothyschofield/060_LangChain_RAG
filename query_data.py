@@ -30,7 +30,13 @@ Answer the question based on the above context: {question}
 load_dotenv()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
+print("###################################################")
+print(PROMPT_TEMPLATE)
+print("###################################################")
+
+
 def main():
+    """
     # Create CLI.
     parser = argparse.ArgumentParser()
     
@@ -38,7 +44,9 @@ def main():
     
     args = parser.parse_args()
     query_text = args.query_text
-    print(f"{query_text=}")
+    """
+    
+    query_text = 'How does Alice meet the Mad Hatter?'
 
     # Prepare the DB.
     embedding_function = OpenAIEmbeddings()
@@ -54,6 +62,8 @@ def main():
 
 
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+    
+    
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=context_text, question=query_text)
     print(prompt)
