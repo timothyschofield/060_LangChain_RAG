@@ -1,5 +1,5 @@
 """
-File : create_datbase.py
+File : create_datebase.py
 
 Author: Tim Schofield
 Date: 06 June 2024
@@ -25,7 +25,6 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 CHROMA_PATH = "chroma"
 DATA_PATH = "data/books"
 
-
 def main():
     generate_data_store()
 
@@ -35,6 +34,12 @@ def generate_data_store():
     chunks = split_text(documents)
     save_to_chroma(chunks)
 
+"""
+from langchain_community.document_loaders.csv_loader import CSVLoader
+
+loader = CSVLoader(file_path='Iris.csv')
+data = loader.load()
+"""
 
 def load_documents():
     loader = DirectoryLoader(DATA_PATH, glob="*.md")
@@ -49,6 +54,7 @@ def split_text(documents: list[Document]):
         length_function=len,
         add_start_index=True,
     )
+    
     chunks = text_splitter.split_documents(documents)
     print(f"Split {len(documents)} documents into {len(chunks)} chunks.")
 
@@ -75,8 +81,10 @@ def save_to_chroma(chunks: list[Document]):
         shutil.rmtree(CHROMA_PATH)
 
     # Create a new DB from the documents.
+    # This must be exactly the same as the embedding function used to query the database
+    # Uses text-embedding-ada-002
     db = Chroma.from_documents(chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH)
-    # db.persist()
+    
     print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}.")
     # Saved 801 chunks to chroma.
 

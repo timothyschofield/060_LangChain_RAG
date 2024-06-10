@@ -50,6 +50,7 @@ def main():
     
     # Prepare the DB - this must have been already been created by running create_database.py
     # Uses text-embedding-ada-002
+    # This must be exactly the same as the embedding function used to create the vector database
     embedding_function = OpenAIEmbeddings()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
@@ -61,7 +62,7 @@ def main():
     chroma_results = db.similarity_search_with_relevance_scores(query_text, k=number_of_answers)
     # [(doc1, score1), (doc2, score2), (doc3, score3)]
     
-    
+    # These are sorted by score - closest similarity is at the top
     if len(chroma_results) == 0 or chroma_results[0][1] < 0.7:
         print(f"Unable to find matching results.")
         return
