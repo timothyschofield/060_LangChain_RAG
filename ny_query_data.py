@@ -42,6 +42,10 @@ import openai
 import os
 from dotenv import load_dotenv
 
+from pathlib import Path 
+from helper_functions_langchain_rag import get_file_timestamp, is_json
+import pandas as pd
+
 CHROMA_PATH = "chroma" 
 
 load_dotenv()
@@ -70,49 +74,77 @@ def main():
         ---
         Answer the question based on the above context: {question}
     """
+    batch_size = 20 # saves every
+    time_stamp = get_file_timestamp()
     
-    # For Chroma database
-    prompt_for_chroma = (
-        f'Find the nearest match to Continent={continent}, Country={country}, State/Province={state_province}, County={county}\n'
-        f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
-    )
+    # The file to be compared against the authority database
+    input_folder = "ny_hebarium_location_csv_input"
+    input_file = "NY_specimens_transcribed.csv"         # Note: this is the one that they gave us
+    input_path = Path(f"{input_folder}/{input_file}")
     
-    # Search Chroma to: "Find the nearest match to Continent=Asia, Country=China,..."
-    # By default this uses L2 distance
-    # Return similar chunks
-    number_of_answers = 3
-    chroma_results = db.similarity_search_with_relevance_scores(prompt_for_chroma, k=number_of_answers)
-    # [(doc1, score1), (doc2, score2), (doc3, score3)]
+    df = pd.read_csv(input_path)
+    count = 0
+    for index, row in df.iterrows():
+    
+        count = count + 1
+        continent = row["DarContinent"]
+        country = row["DarCountry"]
+        state_province =  row["DarStateProvince"]
+        county = row["DarCounty"]
+        print(f"****{continent}, {country}, {state_province}, {county}****")
+    
+        # For Chroma database
+        prompt_for_chroma = (
+            f'Find the nearest match to Continent={continent}, Country={country}, State/Province={state_province}, County={county}\n'
+            f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
+            f'Always enclose JSON keys and values in double quotes'
+        )
+        
+        # Search Chroma to: "Find the nearest match to Continent=Asia, Country=China,..."
+        # By default this uses L2 distance
+        # Return similar chunks
+        number_of_answers = 3
+        chroma_results = db.similarity_search_with_relevance_scores(prompt_for_chroma, k=number_of_answers)
+        # [(doc1, score1), (doc2, score2), (doc3, score3)]
 
-    # These are sorted by score - closest similarity is at the top
-    certainty_threshold = 0.5
-    if len(chroma_results) == 0 or chroma_results[0][1] < certainty_threshold:
-        print(f"Unable to find matching results.")
-        return
-    else:
-        pass
-    
-    # Get the chunks of relevant text back from Chroma and joins them together seperated by newlines and ---
-    context_text_from_chroma = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
+        # These are sorted by score - closest similarity is at the top
+        certainty_threshold = 0.5
+        if len(chroma_results) == 0 or chroma_results[0][1] < certainty_threshold:
+            print(f"Unable to find matching results.")
+            return
+        else:
+            pass
+        
+        # Get the chunks of relevant text back from Chroma and joins them together seperated by newlines and ---
+        context_text_from_chroma = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
 
-    prompt_template = ChatPromptTemplate.from_template(prompt_template_for_gpt)
+        prompt_template = ChatPromptTemplate.from_template(prompt_template_for_gpt)
+        
+        # This creates a prompt for
+        prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_chroma)
+        # print("#################################################")
+        # print(f"{prompt_for_gpt_with_context=}")
+        # print("#################################################")
+        
+        # OpenAI takes the blocks of context text returned from the Chroma database
+        # And uses them to answer the question
+        # Change to standard chat gpt-4o
+        model = ChatOpenAI() # gpt-3.5-turbo apparently
+        gpt_responce = model.invoke(prompt_for_gpt_with_context)
+        gpt_responce = str(gpt_responce) # <class 'langchain_core.messages.ai.AIMessage'> -> String
+        
+        print(f"Response from ChatOpenAI: {gpt_responce}")
+        if is_json(gpt_responce):
+            dict_returned = eval(gpt_responce) # JSON -> Dict
+            print(f'****{dict_returned["irn_eluts"]}, {dict_returned["continent"]}, {dict_returned["country"]}, {dict_returned["state_province"]}, {dict_returned["county"]}****')
+            
+        else:
+            print("INVALID JSON")  
+        
+        
+        print("#################################################")
     
-    # This creates a prompt for
-    prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_chroma)
-    print("#################################################")
-    print(f"{prompt_for_gpt_with_context=}")
-    print("#################################################")
-    
-    # OpenAI takes the blocks of context text returned from the Chroma database
-    # And uses them to answer the question
-    # Change to standard chat gpt-4o
-    model = ChatOpenAI() # gpt-3.5-turbo apparently
-    gpt_responce = model.invoke(prompt_for_gpt_with_context)
-
-    print("#################################################")
-    print(f"Response from ChatOpenAI: {gpt_responce}")
-    print("#################################################")
-    
+        if count > 1: break
 
 if __name__ == "__main__":
     main()
