@@ -10,7 +10,7 @@ Date: 10 June 2024
     continent = "Africa"
     country = "Ethiopia"
     state_province = "Oromia"
-    county = "Mirab Shewa (Zone)"
+    county = "Mirab Shewa (Zone)" 
     
     # A little missing
     # Response from ChatOpenAI: 375150 Africa Ethiopia Oromia Mirab Shewa (Zone) <<<< correct
@@ -42,7 +42,7 @@ import openai
 import os
 from dotenv import load_dotenv
 
-CHROMA_PATH = "chroma"
+CHROMA_PATH = "chroma" 
 
 
 load_dotenv()
