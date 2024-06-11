@@ -4,7 +4,7 @@ File : ny_query_data.py
 Author: Tim Schofield
 Date: 10 June 2024
 
-    # Tests: These are from the authority file, not the transcribed locations, so should work
+    # Tests: These are from the authority file, not the transcribed locations, so they should work
     # Exact
     # Response from ChatOpenAI: 375150 Africa Ethiopia Oromia Mirab Shewa (Zone) <<<< correct
     continent = "Africa"
@@ -33,6 +33,13 @@ Date: 10 June 2024
     state_province = ""
     county = "Putian"
 
+   # A little MORE missing
+    # Response from ChatOpenAI: 1036733 Asia China Fujian Putian (City) <<<< correct
+    continent = ""
+    country = "China"
+    state_province = ""
+    county = "Putian"
+
 """
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
@@ -44,18 +51,14 @@ from dotenv import load_dotenv
 
 from openai import OpenAI
 from pathlib import Path 
-from helper_functions_langchain_rag import get_file_timestamp, is_json, print_chat_completion_responce
+from helper_functions_langchain_rag import get_file_timestamp, is_json, cleanup_json
 import pandas as pd
 
-CHROMA_PATH = "chroma" 
-
-#load_dotenv()
-#openai.api_key = os.environ['OPENAI_API_KEY']
+CHROMA_PATH = "chroma"
 
 MODEL = "gpt-4o" # Context window of 128k max_tokens 4096
 
 load_dotenv()
-
 try:
     my_api_key = os.environ['OPENAI_API_KEY']          
     client = OpenAI(api_key=my_api_key)
@@ -71,14 +74,6 @@ def main():
     # This must be exactly the same as the embedding function used to create the vector database
     embedding_function = OpenAIEmbeddings()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
-
-    # A little MORE missing
-    # Response from ChatOpenAI: 1036733 Asia China Fujian Putian (City) <<<< correct
-    continent = ""
-    country = "China"
-    state_province = ""
-    county = "Putian"
-    
     
     # The {context} and {question} are filled in by ChatPromptTemplate and its format() method
     prompt_template_for_gpt = """
@@ -110,7 +105,7 @@ def main():
         prompt_for_chroma = (
             f'Find the nearest match to Continent={continent}, Country={country}, State/Province={state_province}, County={county}\n'
             f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
-            f'Always enclose JSON keys and values in double quotes'
+            f'Do not return newlines in the JSON'
         )
         
         # Search Chroma to: "Find the nearest match to Continent=Asia, Country=China,..."
@@ -137,27 +132,20 @@ def main():
         prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_chroma)
         # print(f"{prompt_for_gpt_with_context=}")
         
-        
         # OpenAI takes the blocks of context text returned from the Chroma database
         # And uses them to answer the question
         gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt_with_context}])
-        # ChatCompletion object returned - how to handle errors
+        # ChatCompletion object returned - how to handle errors?
         
-        # print_chat_completion_responce(gpt_responce)
         gpt_responce_content = gpt_responce.choices[0].message.content
-        print(f'{gpt_responce_content}')
-        
-        
-        exit()
-        
-        
-        
-        if is_json(gpt_responce):
-            dict_returned = eval(gpt_responce) # JSON -> Dict
+        gpt_responce_content = cleanup_json(gpt_responce_content)
+     
+        if is_json(gpt_responce_content):
+            dict_returned = eval(gpt_responce_content) # JSON -> Dict
             print(f'****{dict_returned["irn_eluts"]}, {dict_returned["continent"]}, {dict_returned["country"]}, {dict_returned["state_province"]}, {dict_returned["county"]}****')
             
         else:
-            print("INVALID JSON")  
+            print(f"INVALID JSON: {gpt_responce}")  
         
         
         print("#################################################")

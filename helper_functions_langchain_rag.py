@@ -38,6 +38,7 @@ def are_keys_valid(json_returned, prompt_key_names):
         return False
       
 # Must be called after you know 200 has been returned
+# What is ocr_output_in assumed to be - something breturned from GPT?
 def clean_up_ocr_output_json_content(ocr_output_in):
   
     json_returned = ocr_output_in.json()['choices'][0]['message']['content']
@@ -57,9 +58,19 @@ def clean_up_ocr_output_json_content(ocr_output_in):
     json_returned = json_returned[open_brace_index:]
     close_brace_index = json_returned.rfind("}")
     json_returned = json_returned[:close_brace_index+1]
-
+    
     return json_returned
 
+def cleanup_json(json_returned):
+    # Occasionaly the whole of the otherwise valid JSON is returned with surrounding square brackets like '[{"text":"tim"}]'
+    # or other odd things like markup '''json and ''' etc.
+    # This removes everything prior to the opening "{" and after the closeing "}"
+    open_brace_index = json_returned.find("{")
+    json_returned = json_returned[open_brace_index:]
+    close_brace_index = json_returned.rfind("}")
+    json_returned = json_returned[:close_brace_index+1]
+    
+    return json_returned
 
 def print_all_chars_from_file(file_name):
   with open(file_name) as f:
