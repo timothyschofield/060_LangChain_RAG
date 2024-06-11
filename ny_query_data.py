@@ -55,9 +55,6 @@ def main():
     embedding_function = OpenAIEmbeddings()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
-    # Search the DB text relevant to "How does Alice meet the Mad Hatter?"
-    # By default this is L2 distance
-    
     # A little MORE missing
     # Response from ChatOpenAI: 1036733 Asia China Fujian Putian (City) <<<< correct
     continent = ""
@@ -80,7 +77,9 @@ def main():
         f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
     )
     
-    # Ask Chroma to find similar chunks
+    # Search Chroma to: "Find the nearest match to Continent=Asia, Country=China,..."
+    # By default this uses L2 distance
+    # Return similar chunks
     number_of_answers = 3
     chroma_results = db.similarity_search_with_relevance_scores(prompt_for_chroma, k=number_of_answers)
     # [(doc1, score1), (doc2, score2), (doc3, score3)]
@@ -106,12 +105,12 @@ def main():
     
     # OpenAI takes the blocks of context text returned from the Chroma database
     # And uses them to answer the question
-    # Chnage for standard chat cpt
-    model = ChatOpenAI()
+    # Change to standard chat gpt-4o
+    model = ChatOpenAI() # gpt-3.5-turbo apparently
     gpt_responce = model.invoke(prompt_for_gpt_with_context)
 
     print("#################################################")
-    print(f"Response from ChatOpenAI: {gpt_responce}\n")
+    print(f"Response from ChatOpenAI: {gpt_responce}")
     print("#################################################")
     
 

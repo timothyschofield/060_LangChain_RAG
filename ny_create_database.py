@@ -52,7 +52,7 @@ def load_documents():
     return documents
 
 """
-    Split 1 documents into 193 chunks.
+    Split 1 documents into 10258 chunks - full 50000 database.
     1042204
     Asia
     China
