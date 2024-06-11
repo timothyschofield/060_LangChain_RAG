@@ -58,6 +58,11 @@ CHROMA_PATH = "chroma"
 
 MODEL = "gpt-4o" # Context window of 128k max_tokens 4096
 
+return_key_list = ["irn", "error", "irn_eluts", "continent", "country", "state_province", "county", "error_output"]
+empty_output_list = dict()
+for key in return_key_list:
+    empty_output_list[key] = "none"
+
 load_dotenv()
 try:
     my_api_key = os.environ['OPENAI_API_KEY']          
@@ -66,7 +71,7 @@ except Exception as ex:
     print("Exception:", ex)
     exit()
 
-
+output_list = []
 def main():
     
     # Prepare the DB - this must have been already been created by running ny_create_database.py
@@ -90,11 +95,15 @@ def main():
     input_file = "NY_specimens_transcribed.csv"         # Note: this is the one that they gave us
     input_path = Path(f"{input_folder}/{input_file}")
     
+    output_folder = "ny_hebarium_location_csv_output"
+    
+    
     df = pd.read_csv(input_path)
     count = 0
     for index, row in df.iterrows():
-    
-        count = count + 1
+        count+=1
+        
+        irn = row["irn"]    # I'm assuming this is the unique identifier
         continent = row["DarContinent"]
         country = row["DarCountry"]
         state_province =  row["DarStateProvince"]
@@ -136,21 +145,33 @@ def main():
         # And uses them to answer the question
         gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt_with_context}])
         # ChatCompletion object returned - how to handle errors?
-        
+
         gpt_responce_content = gpt_responce.choices[0].message.content
         gpt_responce_content = cleanup_json(gpt_responce_content)
      
         if is_json(gpt_responce_content):
             dict_returned = eval(gpt_responce_content) # JSON -> Dict
-            print(f'****{dict_returned["irn_eluts"]}, {dict_returned["continent"]}, {dict_returned["country"]}, {dict_returned["state_province"]}, {dict_returned["county"]}****')
-            
+            dict_returned["irn"] = irn
+            dict_returned["error"] = "OK"
+            dict_returned["error_output"] = "none"
         else:
             print(f"INVALID JSON: {gpt_responce}")  
+            dict_returned = dict(empty_output_list)
+            dict_returned["irn"] = irn
+            dict_returned["error"] = "INVALID JSON"
+            dict_returned["error_output"] = gpt_responce
+        
+        print(f'****{dict_returned}****')
+            
+        output_list.append(dict_returned) 
+        
+        if count % batch_size == 0:
+            pass
+     
+        ###### eo for loop
         
         
-        print("#################################################")
-    
-        if count > 1: break
+        
 
 if __name__ == "__main__":
     main()

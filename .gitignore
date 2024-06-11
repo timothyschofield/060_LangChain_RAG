@@ -3,5 +3,6 @@ back/
 chroma/
 data/
 ny_hebarium_location_csv_input/
+ny_hebarium_location_csv_output/
 .env
 
