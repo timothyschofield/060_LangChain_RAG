@@ -40,7 +40,7 @@ def main():
     # Search the DB text relevant to "How does Alice meet the Mad Hatter?"
     # By default this is L2 distance
     
-    # These is actualy from the authority file so should work
+    # These are actualy from the authority file so should work
     """
     Response from ChatOpenAI: 375150 <<< correct
     Africa
@@ -66,7 +66,7 @@ def main():
     state_province = "Fujian"
     county = "Putian (City)"
     
-     # A little missing
+    # A little missing
     # Response from ChatOpenAI: 1036733 Asia China Fujian Putian (City) <<< correct
     continent = "Asia"
     country = "China"
@@ -82,13 +82,13 @@ def main():
     
     
     # For Chroma database
-    query_text = (
+    chroma_query_text = (
         f"Find the nearest match to Continent={continent}, Country={country}, State/Province={state_province}, County={county}"
         f"Return the matching line together with the irn_eluts number"
     )
     
     number_of_answers = 3
-    chroma_results = db.similarity_search_with_relevance_scores(query_text, k=number_of_answers)
+    chroma_results = db.similarity_search_with_relevance_scores(chroma_query_text, k=number_of_answers)
     # [(doc1, score1), (doc2, score2), (doc3, score3)]
 
     # These are sorted by score - closest similarity is at the top
@@ -97,18 +97,18 @@ def main():
         return
 
     # Get the blocks of relevant text back from Chroma and joins them together seperated by newlines and ---
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
+    context_text_from_chroma = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
 
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt_gpt = prompt_template.format(context=context_text, question=query_text)
+    prompt_for_gpt = prompt_template.format(context=context_text_from_chroma, question=chroma_query_text)
     print("#################################################")
-    print(prompt_gpt)
+    print(prompt_for_gpt)
     print("#################################################")
     
     # OpenAI takes the blocks of context text returned from the Chroma database
     # And uses them to answer the question
     model = ChatOpenAI()
-    response_text = model.predict(prompt_gpt)
+    response_text = model.predict(prompt_for_gpt)
 
     sources = []
     for doc, _score in chroma_results:
