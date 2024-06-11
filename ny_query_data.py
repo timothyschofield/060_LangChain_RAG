@@ -44,7 +44,6 @@ from dotenv import load_dotenv
 
 CHROMA_PATH = "chroma" 
 
-
 load_dotenv()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
@@ -91,8 +90,10 @@ def main():
     if len(chroma_results) == 0 or chroma_results[0][1] < certainty_threshold:
         print(f"Unable to find matching results.")
         return
-
-    # Get the blocks of relevant text back from Chroma and joins them together seperated by newlines and ---
+    else:
+        pass
+    
+    # Get the chunks of relevant text back from Chroma and joins them together seperated by newlines and ---
     context_text_from_chroma = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
 
     prompt_template = ChatPromptTemplate.from_template(prompt_template_for_gpt)
@@ -100,29 +101,19 @@ def main():
     # This creates a prompt for
     prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_chroma)
     print("#################################################")
-    print(prompt_for_gpt_with_context)
+    print(f"{prompt_for_gpt_with_context=}")
     print("#################################################")
     
     # OpenAI takes the blocks of context text returned from the Chroma database
     # And uses them to answer the question
+    # Chnage for standard chat cpt
     model = ChatOpenAI()
-    response_text = model.predict(prompt_for_gpt_with_context)
+    gpt_responce = model.invoke(prompt_for_gpt_with_context)
 
-    sources = []
-    for doc, _score in chroma_results:
-        sources.append(doc.metadata)
-
-    formatted_response = f"Response from ChatOpenAI: {response_text}\nSources from Chroma: {sources}"
-    
     print("#################################################")
-    print(formatted_response)
+    print(f"Response from ChatOpenAI: {gpt_responce}\n")
     print("#################################################")
     
-    
-
-
-
-
 
 if __name__ == "__main__":
     main()
