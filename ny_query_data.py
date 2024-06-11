@@ -42,14 +42,27 @@ import openai
 import os
 from dotenv import load_dotenv
 
+from openai import OpenAI
 from pathlib import Path 
-from helper_functions_langchain_rag import get_file_timestamp, is_json
+from helper_functions_langchain_rag import get_file_timestamp, is_json, print_chat_completion_responce
 import pandas as pd
 
 CHROMA_PATH = "chroma" 
 
+#load_dotenv()
+#openai.api_key = os.environ['OPENAI_API_KEY']
+
+MODEL = "gpt-4o" # Context window of 128k max_tokens 4096
+
 load_dotenv()
-openai.api_key = os.environ['OPENAI_API_KEY']
+
+try:
+    my_api_key = os.environ['OPENAI_API_KEY']          
+    client = OpenAI(api_key=my_api_key)
+except Exception as ex:
+    print("Exception:", ex)
+    exit()
+
 
 def main():
     
@@ -120,20 +133,25 @@ def main():
 
         prompt_template = ChatPromptTemplate.from_template(prompt_template_for_gpt)
         
-        # This creates a prompt for
+        # This creates a prompt
         prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_chroma)
-        # print("#################################################")
         # print(f"{prompt_for_gpt_with_context=}")
-        # print("#################################################")
+        
         
         # OpenAI takes the blocks of context text returned from the Chroma database
         # And uses them to answer the question
-        # Change to standard chat gpt-4o
-        model = ChatOpenAI() # gpt-3.5-turbo apparently
-        gpt_responce = model.invoke(prompt_for_gpt_with_context)
-        gpt_responce = str(gpt_responce) # <class 'langchain_core.messages.ai.AIMessage'> -> String
+        gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt_with_context}])
+        # ChatCompletion object returned - how to handle errors
         
-        print(f"Response from ChatOpenAI: {gpt_responce}")
+        # print_chat_completion_responce(gpt_responce)
+        gpt_responce_content = gpt_responce.choices[0].message.content
+        print(f'{gpt_responce_content}')
+        
+        
+        exit()
+        
+        
+        
         if is_json(gpt_responce):
             dict_returned = eval(gpt_responce) # JSON -> Dict
             print(f'****{dict_returned["irn_eluts"]}, {dict_returned["continent"]}, {dict_returned["country"]}, {dict_returned["state_province"]}, {dict_returned["county"]}****')

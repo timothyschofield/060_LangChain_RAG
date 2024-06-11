@@ -1,4 +1,29 @@
 
+def print_chat_completion_responce(gpt_responce):
+  
+        string = (
+            f"{gpt_responce.id=}\n"
+            f"{gpt_responce.choices[0].finish_reason=}\n"
+            f"{gpt_responce.choices[0].index=}\n"
+            f"{gpt_responce.choices[0].logprobs=}\n"
+            f"{gpt_responce.choices[0].message.content=}\n"
+            f"{gpt_responce.choices[0].message.role=}\n"
+            f"{gpt_responce.choices[0].message.function_call=}\n"
+            f"{gpt_responce.choices[0].message.tool_calls=}\n"
+            f"{gpt_responce.created=}\n"
+            f"{gpt_responce.model=}\n"
+            f"{gpt_responce.object=}\n"
+            f"{gpt_responce.system_fingerprint=}\n"
+            f"{gpt_responce.created=}\n"
+            f"{gpt_responce.usage.completion_tokens=}\n"
+            f"{gpt_responce.usage.prompt_tokens=}\n"
+            f"{gpt_responce.usage.total_tokens=}\n"
+        )
+        
+        print(string)
+
+
+
 # Sometimes ChatGPT returns invalid keys in the JSON
 # The json_returned must be valid JSON
 def are_keys_valid(json_returned, prompt_key_names):
