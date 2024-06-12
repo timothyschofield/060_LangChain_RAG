@@ -100,9 +100,10 @@ prompt_template_for_gpt = """
 df = pd.read_csv(input_path)
 output_list = []
 count = 0
+print("####################################### START OUTPUT ######################################")
 for index, row in df.iterrows():
     
-    row = df.iloc[2]
+    #row = df.iloc[12]
     
     count+=1
     print(f"{count=}")
@@ -120,17 +121,26 @@ for index, row in df.iterrows():
     if state_province != state_province : state_province = ""   
     if county != county : county = ""   
     
-    print(f"IN ****{continent}, {country}, {state_province}, {county}****")
+    print(f"IN *******************{continent}, {country}, {state_province}, {county}******************")
 
-    # For Chroma database
+    if continent == "": continent_text = f""
+    else: continent_text = f"Continent={continent}"
+    
+    if country == "": country_text = f""
+    else: country_text = f"Country={country}"
+    
+    if state_province == "": state_province_text = f""
+    else: state_province_text = f"State or Province={state_province}"
+    
+    if county == "": county_text = f""
+    else: county_text = f"County={county}"
+    
     prompt_for_chroma = (
-        f'Find the nearest match to Continent="{continent}", Country="{country}", State/Province="{state_province}", County="{county}"\n'
-        f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
-        f'Do not return newlines in the JSON'
+        f'Find a match for Continent like {continent}, Country like {country}, State or Province like {state_province}, County like {county}/n'
+        f'{continent_text}, {country_text}, {state_province_text}, {county_text} must be included in the match'
     )
     
-    
-    
+    print(f"{prompt_for_chroma=}")
     
     # Search Chroma to: "Find the nearest match to Continent=Asia, Country=China,..."
     # By default this uses L2 distance
@@ -138,13 +148,13 @@ for index, row in df.iterrows():
     number_of_answers = 3
     chroma_results = db.similarity_search_with_relevance_scores(prompt_for_chroma, k=number_of_answers)
    
-    # for results in chroma_results:
-    results = chroma_results[0]
-    text = str(results[0].page_content)
-    metadata = results[0].metadata
-    # text = text.replace("\\n", chr(10))
-    print(f"{text}\n{results[1]}\n")
-
+    for results in chroma_results:
+        # results = chroma_results[0]
+        text = str(results[0].page_content)
+        metadata = results[0].metadata
+        # text = text.replace("\\n", chr(10))
+        print(f"{text}\n##### certainty: {results[1]}\n")
+    
 
 
     # These are sorted by score - closest similarity is at the top
@@ -156,48 +166,50 @@ for index, row in df.iterrows():
         pass
     
     
- 
-    
-    
     # Get the chunks of relevant text back from Chroma and joins them together seperated by newlines and ---
     context_text_from_chroma = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
 
     prompt_template = ChatPromptTemplate.from_template(prompt_template_for_gpt)
     
-    # This creates a prompt
-    prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_chroma)
-    # print(f"{prompt_for_gpt_with_context=}")
+    prompt_for_gpt = (
+        f'Find the nearest match to Continent="{continent}", Country="{country}", State/Province="{state_province}", County="{county}"\n'
+        f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
+        f'Do not return newlines in the JSON'
+    )
+   
+    prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_gpt)
+    
+    print("=====================================")
+    print(prompt_for_gpt_with_context)
+    print("=====================================")
     
     # OpenAI takes the blocks of context text returned from the Chroma database
     # And uses them to answer the question
     gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt_with_context}])
     # ChatCompletion object returned - how to handle errors?
-    # print("GPT ANSWER", gpt_responce)
-
 
     gpt_responce_content = gpt_responce.choices[0].message.content
     gpt_responce_content = cleanup_json(gpt_responce_content)
-    print(f"{gpt_responce_content=}")
     
-    if is_json(gpt_responce_content) or gpt_responce_content == "{}":
+    if is_json(gpt_responce_content) and gpt_responce_content != "{}":
         dict_returned = eval(gpt_responce_content) # JSON -> Dict
         dict_returned["irn"] = irn
         dict_returned["error"] = "OK"
-        dict_returned["error_output"] = "none"
+        dict_returned["error_output"] = "NA"
     else:
         if(gpt_responce_content == "{}"):
             error = "GPT RETURNED NO ANSWER"
         else:
             error = "INVALID JSON"  
             
-        print(f"{error}: {gpt_responce}")
+        #print(f"{error}: {gpt_responce}")
         dict_returned = dict(empty_output_list)
         dict_returned["irn"] = irn
         dict_returned["error"] = error
         dict_returned["error_output"] = gpt_responce
     
     
-    # print(f'OUT ****{dict_returned}****')
+    print(f'OUT ****{dict_returned}*****************************************************')
         
     output_list.append(dict_returned) 
     
@@ -206,7 +218,9 @@ for index, row in df.iterrows():
         output_path = f"{output_folder}/{project_name}_{time_stamp}-{count}.csv"
         create_and_save_dataframe(output_list=output_list, key_list_with_logging=[], output_path_name=output_path)
     
-    
+    # Just start by making sure something good comes back from Chroma
+    # Not too many options - no need for three answers
+    # Test with empty - more answers, smaller chunks
     if count > 0 :break
     
     ###### eo for loop
