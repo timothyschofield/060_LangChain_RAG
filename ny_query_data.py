@@ -1,8 +1,14 @@
 """
-File : ny_query_data.py
 
-Author: Tim Schofield
-Date: 10 June 2024
+    File : ny_query_data.py
+
+    Author: Tim Schofield
+    Date: 10 June 2024
+
+    It turns out (my findings) that for CSVs
+    Chroma is no better than a standard database
+    If you are presenting simple, non-NL, queries and are wanting a good match returned 
+    from a CSV file, then, I think, use an SQL database
 
     # Tests: These are from the authority file, not the transcribed locations, so they should work
     # Exact
@@ -103,7 +109,7 @@ count = 0
 print("####################################### START OUTPUT ######################################")
 for index, row in df.iterrows():
     
-    #row = df.iloc[12]
+    #row = df.iloc[0]
     
     count+=1
     print(f"{count=}")
@@ -114,6 +120,13 @@ for index, row in df.iterrows():
     state_province =  row["DarStateProvince"]
     county = row["DarCounty"]
 
+    """
+    continent = "Africa"
+    country = ""
+    state_province =  "Djelfa"
+    county = ""
+    """
+
     # Get rid if nan coming in from spreadsheet
     # Strange fact: nan != nan is True
     if continent != continent : continent = ""
@@ -121,7 +134,6 @@ for index, row in df.iterrows():
     if state_province != state_province : state_province = ""   
     if county != county : county = ""   
     
-    print(f"IN *******************{continent}, {country}, {state_province}, {county}******************")
 
     if continent == "": continent_text = f""
     else: continent_text = f"Continent={continent}"
@@ -136,10 +148,11 @@ for index, row in df.iterrows():
     else: county_text = f"County={county}"
     
     prompt_for_chroma = (
-        f'Find a match for Continent like {continent}, Country like {country}, State or Province like {state_province}, County like {county}/n'
+        f'Find a match for Continent like {continent}, Country like {country}, State or Province like {state_province}, County like {county} '
         f'{continent_text}, {country_text}, {state_province_text}, {county_text} must be included in the match'
     )
     
+    print(f"IN *******************{continent}, {country}, {state_province}, {county}******************")
     print(f"{prompt_for_chroma=}")
     
     # Search Chroma to: "Find the nearest match to Continent=Asia, Country=China,..."
@@ -148,13 +161,14 @@ for index, row in df.iterrows():
     number_of_answers = 3
     chroma_results = db.similarity_search_with_relevance_scores(prompt_for_chroma, k=number_of_answers)
    
+    """
     for results in chroma_results:
         # results = chroma_results[0]
         text = str(results[0].page_content)
         metadata = results[0].metadata
         # text = text.replace("\\n", chr(10))
         print(f"{text}\n##### certainty: {results[1]}\n")
-    
+    """
 
 
     # These are sorted by score - closest similarity is at the top
@@ -179,9 +193,9 @@ for index, row in df.iterrows():
    
     prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_gpt)
     
-    print("=====================================")
-    print(prompt_for_gpt_with_context)
-    print("=====================================")
+    #print("=====================================")
+    #print(prompt_for_gpt_with_context)
+    #print("=====================================")
     
     # OpenAI takes the blocks of context text returned from the Chroma database
     # And uses them to answer the question
@@ -218,10 +232,11 @@ for index, row in df.iterrows():
         output_path = f"{output_folder}/{project_name}_{time_stamp}-{count}.csv"
         create_and_save_dataframe(output_list=output_list, key_list_with_logging=[], output_path_name=output_path)
     
+    
     # Just start by making sure something good comes back from Chroma
     # Not too many options - no need for three answers
     # Test with empty - more answers, smaller chunks
-    if count > 0 :break
+    if count > 100 :break
     
     ###### eo for loop
         
