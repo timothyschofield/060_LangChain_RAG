@@ -66,7 +66,7 @@ input_file = "NY_specimens_transcribed.csv"         # Note: this is the one that
 input_path = Path(f"{input_folder}/{input_file}")
 
 output_folder = "ny_hebarium_location_csv_output"
-batch_size = 5 # saves every
+batch_size = 20 # saves every
 time_stamp = get_file_timestamp()
 
 return_key_list = ["irn", "error", "irn_eluts", "continent", "country", "state_province", "county", "error_output"]
@@ -101,7 +101,11 @@ df = pd.read_csv(input_path)
 output_list = []
 count = 0
 for index, row in df.iterrows():
+    
+    row = df.iloc[2]
+    
     count+=1
+    print(f"{count=}")
     
     irn = row["irn"]  
     continent = row["DarContinent"]
@@ -120,17 +124,28 @@ for index, row in df.iterrows():
 
     # For Chroma database
     prompt_for_chroma = (
-        f'Find the nearest match to Continent={continent}, Country={country}, State/Province={state_province}, County={county}\n'
+        f'Find the nearest match to Continent="{continent}", Country="{country}", State/Province="{state_province}", County="{county}"\n'
         f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
         f'Do not return newlines in the JSON'
     )
+    
+    
+    
     
     # Search Chroma to: "Find the nearest match to Continent=Asia, Country=China,..."
     # By default this uses L2 distance
     # Return similar chunks
     number_of_answers = 3
     chroma_results = db.similarity_search_with_relevance_scores(prompt_for_chroma, k=number_of_answers)
-    # [(doc1, score1), (doc2, score2), (doc3, score3)]
+   
+    # for results in chroma_results:
+    results = chroma_results[0]
+    text = str(results[0].page_content)
+    metadata = results[0].metadata
+    # text = text.replace("\\n", chr(10))
+    print(f"{text}\n{results[1]}\n")
+
+
 
     # These are sorted by score - closest similarity is at the top
     certainty_threshold = 0.5
@@ -139,6 +154,10 @@ for index, row in df.iterrows():
         # Have to deal with this
     else:
         pass
+    
+    
+ 
+    
     
     # Get the chunks of relevant text back from Chroma and joins them together seperated by newlines and ---
     context_text_from_chroma = "\n\n---\n\n".join([doc.page_content for doc, _score in chroma_results])
@@ -153,23 +172,32 @@ for index, row in df.iterrows():
     # And uses them to answer the question
     gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt_with_context}])
     # ChatCompletion object returned - how to handle errors?
+    # print("GPT ANSWER", gpt_responce)
+
 
     gpt_responce_content = gpt_responce.choices[0].message.content
     gpt_responce_content = cleanup_json(gpt_responce_content)
+    print(f"{gpt_responce_content=}")
     
-    if is_json(gpt_responce_content):
+    if is_json(gpt_responce_content) or gpt_responce_content == "{}":
         dict_returned = eval(gpt_responce_content) # JSON -> Dict
         dict_returned["irn"] = irn
         dict_returned["error"] = "OK"
         dict_returned["error_output"] = "none"
     else:
-        print(f"INVALID JSON: {gpt_responce}")  
+        if(gpt_responce_content == "{}"):
+            error = "GPT RETURNED NO ANSWER"
+        else:
+            error = "INVALID JSON"  
+            
+        print(f"{error}: {gpt_responce}")
         dict_returned = dict(empty_output_list)
         dict_returned["irn"] = irn
-        dict_returned["error"] = "INVALID JSON"
+        dict_returned["error"] = error
         dict_returned["error_output"] = gpt_responce
     
-    print(f'OUT ****{dict_returned}****')
+    
+    # print(f'OUT ****{dict_returned}****')
         
     output_list.append(dict_returned) 
     
@@ -178,7 +206,8 @@ for index, row in df.iterrows():
         output_path = f"{output_folder}/{project_name}_{time_stamp}-{count}.csv"
         create_and_save_dataframe(output_list=output_list, key_list_with_logging=[], output_path_name=output_path)
     
-    if count > 15 :break
+    
+    if count > 0 :break
     
     ###### eo for loop
         
