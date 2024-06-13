@@ -5,6 +5,21 @@
     Author: Tim Schofield
     Date: 12 June 2024
 
+    pd_df.query('column_name.str.contains("abc")', engine='python')
+
+    A trick I just came up with for "starts with":
+    pandas.query('"abc" <= column_name <= "abc~"')
+
+    df.query('column_a.str.contains("abc") or column_b.str.contains("xyz") and column_c>100', engine='python')
+
+
+    Query uses the pandas eval() and is limited in what you can use within it. 
+    If you want to use pure SQL you could consider pandasql where the following statement would work for you:
+    sqldf("select col_name from df where col_name like 'abc%';", locals())
+
+    Pandas Query Examples: SQL-like queries in dataframes
+    https://queirozf.com/entries/pandas-query-examples-sql-like-syntax-queries-in-dataframes
+
 
 """
 import pandas as pd
@@ -41,8 +56,19 @@ except Exception as ex:
     print("Exception:", ex)
     exit()
 
+# irn_eluts    Continent   Country   stateProvince   County
 df_authority = pd.read_csv(input_authority_path)
-print(df_authority.head())
+#print(df_authority.head()
+
+
+
+
+
+
+
+
+
+
 
 
 
