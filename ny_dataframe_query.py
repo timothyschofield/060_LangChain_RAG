@@ -36,7 +36,10 @@ output_folder = "ny_hebarium_location_csv_output"
 
 batch_size = 20 # saves every
 time_stamp = get_file_timestamp()
-
+return_key_list = [ "irn_eluts", "continent", "country", "state_province", "county", "irn", "error", "error_output"]
+empty_output_list = dict()
+for key in return_key_list:
+    empty_output_list[key] = "none"
 
 load_dotenv()
 try:
@@ -73,8 +76,6 @@ for index, row in df_transcribed.iterrows():
 
     print(f"{irn} {continent} {country} {state_province} {county} ")
 
-    # Get rid if nan coming in from spreadsheet
-    # Strange fact: nan != nan is True
     if continent == "nan" : continent = ""
     if country == "nan": country = ""
     if state_province == "nan" : state_province = ""   
@@ -123,10 +124,44 @@ for index, row in df_transcribed.iterrows():
     gpt_responce_content = gpt_responce.choices[0].message.content
     gpt_responce_content = cleanup_json(gpt_responce_content)
 
-    print(gpt_responce_content)
+    # print(gpt_responce_content)
 
-    if count > 5: break
-   
+    if is_json(gpt_responce_content) and gpt_responce_content != "{}":
+        dict_returned = eval(gpt_responce_content) # JSON -> Dict
+        dict_returned["irn"] = irn
+        dict_returned["error"] = "OK"
+        dict_returned["error_output"] = "NA"
+    else:
+        if(gpt_responce_content == "{}"):
+            error = "GPT RETURNED NO ANSWER"
+        else:
+            error = "INVALID JSON"  
+            
+        print(f"{error}: {gpt_responce}")
+        dict_returned = dict(empty_output_list)
+        dict_returned["irn"] = irn
+        dict_returned["error"] = error
+        dict_returned["error_output"] = gpt_responce
+        
+    print(f'OUT ****{dict_returned}************************')
+
+    output_list.append(dict_returned) 
+    
+    if count % batch_size == 0:
+        print(f"WRITING BATCH:{count}")
+        output_path = f"{output_folder}/{project_name}_{time_stamp}-{count}.csv"
+        create_and_save_dataframe(output_list=output_list, key_list_with_logging=[], output_path_name=output_path)
+    
+    # Just start by making sure something good comes back from Chroma
+    # Not too many options - no need for three answers
+    # Test with empty - more answers, smaller chunks
+    if count > 60 :break
+    
+    ###### eo for loop
+        
+print(f"WRITING BATCH:{count}")
+output_path = f"{output_folder}/{project_name}_{time_stamp}-{count}.csv"
+create_and_save_dataframe(output_list=output_list, key_list_with_logging=[], output_path_name=output_path)  
 
 
 
