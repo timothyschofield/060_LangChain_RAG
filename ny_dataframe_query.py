@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from helper_functions_langchain_rag import get_file_timestamp, is_json, cleanup_json, create_and_save_dataframe
 from pathlib import Path
 from openai import OpenAI
+import re
 
 MODEL = "gpt-4o" # Context window of 128k max_tokens 4096
 
@@ -63,40 +64,32 @@ for index, row in df_transcribed.iterrows():
     count+=1
     print(f"\n{count=}")
     
-    irn = row["irn"]  
-    continent = row["DarContinent"]
-    country = row["DarCountry"]
-    state_province =  row["DarStateProvince"]
-    county = row["DarCounty"]
-    locality_info = row["DarLocality"]
+    irn = str(row["irn"])
+    continent = str(row["DarContinent"])
+    country = str(row["DarCountry"])
+    state_province = str(row["DarStateProvince"])
+    county = str(row["DarCounty"])
+    locality_info = str(row["DarLocality"])
 
+    print(f"{irn} {continent} {country} {state_province} {county} ")
 
     # Get rid if nan coming in from spreadsheet
     # Strange fact: nan != nan is True
-    if continent != continent : continent = ""
-    if country != country : country = ""
-    if state_province != state_province : state_province = ""   
-    if county != county : county = "" 
-    if locality_info != locality_info : locality_info = "" 
+    if continent == "nan" : continent = ""
+    if country == "nan": country = ""
+    if state_province == "nan" : state_province = ""   
+    if county == "nan" : county = ""
+    if locality_info == "nan" : locality_info = "" 
 
-    """
-    # Get a line from Transcribed and get match(s) in Authority
-    # Fake line from Transcribed
-    irn = "999999"
-    continent = "Africa"
-    country = "Zimbabwe"
-    state_province =  "Midlands Province"
-    county = ""  # Shurugwi Distr.
-    locality_info = ""
-    """
+    print(f"{irn} {continent} {country} {state_province} {county} ")
 
     # Search Authority for match(s) with Transcribed line
     # Not sure what to do about "like", i.e. partial matches
     query_string = f""
-    if continent != "": query_string = f"(Continent == '{continent}')"
-    if country != "": query_string = f"{query_string} and (Country == '{country}')"
-    if state_province != "": query_string = f"{query_string} and (stateProvince == '{state_province}')"
-    if county != "": query_string = f"{query_string} and (County == '{county}')"
+    if continent != "": query_string = f'(Continent == "{continent}")'
+    if country != "": query_string = f'{query_string} and (Country == "{country}")'
+    if state_province != "": query_string = f'{query_string} and (stateProvince == "{state_province}")'
+    if county != "": query_string = f'{query_string} and (County == "{county}")'
     
     # Case of a spare "and" at the front
     open_bracket_index = query_string.find("(")
@@ -105,7 +98,7 @@ for index, row in df_transcribed.iterrows():
     print(f"query_string for authority file: ****'{query_string}'****")
     
     authority_matches = df_authority.query(query_string)
-    print(f"Number of matches in authority file:{len(authority_matches)}")
+    print(f"Number of matches in authority file: {len(authority_matches)}")
     #print("#########################################")
     #print(authority_matches)
     #print("#########################################")
