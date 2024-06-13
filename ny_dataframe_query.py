@@ -79,7 +79,15 @@ for index, row in df_transcribed.iterrows():
     county = "Mirab Wellega (Zone)"
 
     # Search Authority for match(s) with Transcribed line
-    authority_matches = df_authority.query("(Continent == @continent) and (Country == @country) and (stateProvince == @state_province) and (County == @county)")
+    query_string = f""
+    if continent != "": query_string = f"(Continent == '{continent}')"
+    if country != "": query_string = f"{query_string} and (Country == '{country}')"
+    if state_province != "": query_string = f"{query_string} and (stateProvince == '{state_province}')"
+    if county != "": query_string = f"{query_string} and (County == '{county}')"
+        
+    print(f"****'{query_string}'****")
+    
+    authority_matches = df_authority.query(query_string)
     print(authority_matches)
     exit()
 
