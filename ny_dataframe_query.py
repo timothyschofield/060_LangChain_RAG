@@ -61,7 +61,7 @@ for index, row in df_transcribed.iterrows():
     #row = df.iloc[0]
     
     count+=1
-    print(f"{count=}")
+    print(f"\n{count=}")
     
     irn = row["irn"]  
     continent = row["DarContinent"]
@@ -79,7 +79,7 @@ for index, row in df_transcribed.iterrows():
     if county != county : county = "" 
     if locality_info != locality_info : locality_info = "" 
 
-
+    """
     # Get a line from Transcribed and get match(s) in Authority
     # Fake line from Transcribed
     irn = "999999"
@@ -88,7 +88,7 @@ for index, row in df_transcribed.iterrows():
     state_province =  "Midlands Province"
     county = ""  # Shurugwi Distr.
     locality_info = ""
-
+    """
 
     # Search Authority for match(s) with Transcribed line
     # Not sure what to do about "like", i.e. partial matches
@@ -102,38 +102,38 @@ for index, row in df_transcribed.iterrows():
     open_bracket_index = query_string.find("(")
     query_string = query_string[open_bracket_index:]
     
-    print(f"****'{query_string}'****")
+    print(f"query_string for authority file: ****'{query_string}'****")
     
     authority_matches = df_authority.query(query_string)
-    
+    print(f"Number of matches in authority file:{len(authority_matches)}")
     #print("#########################################")
     #print(authority_matches)
     #print("#########################################")
     
-      # Handel no matches
+    # Handel no matches
       
     # Then basicaly do conflict resolution using ChatGPT!
-
-  
-
     # Basic contextual prompt with out any onther information
     prompt_for_gpt = (
-        f'Answer the question based on the following context:\n\n'
-        f'{authority_matches}\n\n'
+        f'Answer the question based on the following context:\n'
+        f'{authority_matches}\n'
         f'Answer the question based on the above context: '
         f'Find the nearest match to Continent="{continent}", Country="{country}", State/Province="{state_province}", County="{county}"\n'
-        f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
+        f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}\n'
         f'Do not return newlines in the JSON'
     )
 
-    print(prompt_for_gpt)
+    #print(prompt_for_gpt)
 
+    gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt}])
 
+    gpt_responce_content = gpt_responce.choices[0].message.content
+    gpt_responce_content = cleanup_json(gpt_responce_content)
 
+    print(gpt_responce_content)
 
-
-
-    exit()
+    if count > 5: break
+   
 
 
 
