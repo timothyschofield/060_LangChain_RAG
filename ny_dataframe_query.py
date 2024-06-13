@@ -74,21 +74,30 @@ for index, row in df_transcribed.iterrows():
     # Fake line from Transcribed
     irn = "999999"
     continent = "Africa"
-    country = "Ethiopia"
-    state_province =  "Oromia"
-    county = "Mirab Wellega (Zone)"
+    country = "Zimbabwe"
+    state_province =  "Midlands Province"
+    county = ""  # Shurugwi Distr.
 
     # Search Authority for match(s) with Transcribed line
+    # Not sure what to do about "like", i.e. partial matches
     query_string = f""
     if continent != "": query_string = f"(Continent == '{continent}')"
     if country != "": query_string = f"{query_string} and (Country == '{country}')"
     if state_province != "": query_string = f"{query_string} and (stateProvince == '{state_province}')"
     if county != "": query_string = f"{query_string} and (County == '{county}')"
-        
+    
+    # Case of a spare "and" at the front
+    open_bracket_index = query_string.find("(")
+    query_string = query_string[open_bracket_index:]
+    
     print(f"****'{query_string}'****")
     
     authority_matches = df_authority.query(query_string)
     print(authority_matches)
+    
+    
+    # Then basicaly do conflict resolution using ChatGPT!
+
     exit()
 
 
