@@ -36,7 +36,7 @@ output_folder = "ny_hebarium_location_csv_output"
 
 batch_size = 20 # saves every
 time_stamp = get_file_timestamp()
-return_key_list = [ "irn_eluts", "continent", "country", "state_province", "county", "irn", "error", "error_output"]
+return_key_list = [ "irn_eluts", "continent", "country", "state_province", "county", "irn", "error", "query_string", "error_output"]
 empty_output_list = dict()
 for key in return_key_list:
     empty_output_list[key] = "none"
@@ -130,6 +130,7 @@ for index, row in df_transcribed.iterrows():
         dict_returned = eval(gpt_responce_content) # JSON -> Dict
         dict_returned["irn"] = irn
         dict_returned["error"] = "OK"
+        dict_returned["query_string"] = query_string
         dict_returned["error_output"] = "NA"
     else:
         if(gpt_responce_content == "{}"):
@@ -139,8 +140,17 @@ for index, row in df_transcribed.iterrows():
             
         print(f"{error}: {gpt_responce}")
         dict_returned = dict(empty_output_list)
+       
         dict_returned["irn"] = irn
+        
+        # The origonal input from the transcribed csv
+        dict_returned["continent"] = continent
+        dict_returned["country"] = country
+        dict_returned["state_province"] = state_province
+        dict_returned["county"] = county
+        
         dict_returned["error"] = error
+        dict_returned["query_string"] = query_string
         dict_returned["error_output"] = gpt_responce
         
     print(f'OUT ****{dict_returned}************************')
