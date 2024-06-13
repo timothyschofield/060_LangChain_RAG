@@ -47,7 +47,7 @@ except Exception as ex:
 
 # irn_eluts    Continent   Country   stateProvince   County
 df_authority = pd.read_csv(input_authority_path)
-#print(df_authority.head()
+# print(df_authority.head())
 
 # irn  DarGlobalUniqueIdentifier DarInstitutionCode  DarCatalogNumber  DarRelatedInformation ... SpeOtherSpecimenNumbers_tab   
 df_transcribed = pd.read_csv(input_transcibed_path)
@@ -68,15 +68,27 @@ for index, row in df_transcribed.iterrows():
     country = row["DarCountry"]
     state_province =  row["DarStateProvince"]
     county = row["DarCounty"]
+    locality_info = row["DarLocality"]
+
+
+    # Get rid if nan coming in from spreadsheet
+    # Strange fact: nan != nan is True
+    if continent != continent : continent = ""
+    if country != country : country = ""
+    if state_province != state_province : state_province = ""   
+    if county != county : county = "" 
+    if locality_info != locality_info : locality_info = "" 
+
 
     # Get a line from Transcribed and get match(s) in Authority
-
     # Fake line from Transcribed
     irn = "999999"
     continent = "Africa"
     country = "Zimbabwe"
     state_province =  "Midlands Province"
     county = ""  # Shurugwi Distr.
+    locality_info = ""
+
 
     # Search Authority for match(s) with Transcribed line
     # Not sure what to do about "like", i.e. partial matches
@@ -93,10 +105,33 @@ for index, row in df_transcribed.iterrows():
     print(f"****'{query_string}'****")
     
     authority_matches = df_authority.query(query_string)
-    print(authority_matches)
     
+    #print("#########################################")
+    #print(authority_matches)
+    #print("#########################################")
     
+      # Handel no matches
+      
     # Then basicaly do conflict resolution using ChatGPT!
+
+  
+
+    # Basic contextual prompt with out any onther information
+    prompt_for_gpt = (
+        f'Answer the question based on the following context:\n\n'
+        f'{authority_matches}\n\n'
+        f'Answer the question based on the above context: '
+        f'Find the nearest match to Continent="{continent}", Country="{country}", State/Province="{state_province}", County="{county}"\n'
+        f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}'
+        f'Do not return newlines in the JSON'
+    )
+
+    print(prompt_for_gpt)
+
+
+
+
+
 
     exit()
 

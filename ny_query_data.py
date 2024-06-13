@@ -8,7 +8,7 @@
     It turns out (my findings) that for CSVs
     Chroma is no better than a standard database
     If you are presenting simple, non-NL, queries and are wanting a good match returned 
-    from a CSV file, then, I think, use an SQL database
+    from a CSV file, then, I think, use an SQL database or do it with DataFrames - see ny_dataframe_query.py
 
     # Tests: These are from the authority file, not the transcribed locations, so they should work
     # Exact
@@ -194,7 +194,7 @@ for index, row in df.iterrows():
     prompt_for_gpt_with_context = prompt_template.format(context=context_text_from_chroma, question=prompt_for_gpt)
     
     #print("=====================================")
-    #print(prompt_for_gpt_with_context)
+    print(prompt_for_gpt_with_context)
     #print("=====================================")
     
     # OpenAI takes the blocks of context text returned from the Chroma database
@@ -236,7 +236,7 @@ for index, row in df.iterrows():
     # Just start by making sure something good comes back from Chroma
     # Not too many options - no need for three answers
     # Test with empty - more answers, smaller chunks
-    if count > 100 :break
+    if count > 0 :break
     
     ###### eo for loop
         
