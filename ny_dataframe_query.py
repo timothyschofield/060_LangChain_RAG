@@ -38,7 +38,7 @@ output_folder = "ny_hebarium_location_csv_output"
 
 batch_size = 20 # saves every
 time_stamp = get_file_timestamp()
-return_key_list = [ "irn_eluts", "continent", "country", "state_province", "county", "irn", "error", "query_string", "error_output"]
+return_key_list = [ "irn_eluts", "continent", "country", "state_province", "county", "num_authority_matches", "irn", "error", "query_string", "error_output"]
 empty_output_list = dict()
 for key in return_key_list:
     empty_output_list[key] = "none"
@@ -69,7 +69,7 @@ for index, row in df_transcribed.iterrows():
     count+=1
     print(f"\n{count=}")
     
-    # But my OCRed csv lines don't have an irn - must copy irn across
+    # Must copy irn across from the OCR output spreadsheet
     irn = str(row["irn"]) 
     
     
@@ -105,42 +105,48 @@ for index, row in df_transcribed.iterrows():
     
     print(f"query_string for authority file: ****'{query_string}'****")
     
-    # Sometimes a specimen fails to transcribe - INVALID JSON or whatever
-    # In this case Continent Country stateProvince County will be none none none none
+    # Sometimes a OCR specimen fails to transcribe - INVALID JSON or whatever
+    # In this case Continent Country stateProvince = none none none none
     # and the query_string will be empty
+    if query_string != "":
+        # Returns a DataFrame
+        authority_matches = df_authority.query(query_string)
+    else:
+        authority_matches = pd.DataFrame() # Empty DataFrame
     
+    num_authority_matches = len(authority_matches)
     
-    authority_matches = df_authority.query(query_string)
-    print(f"Number of matches in authority file: {len(authority_matches)}")
+    print(f"Number of matches in authority file: {num_authority_matches}")
     #print("#########################################")
     #print(authority_matches)
     #print("#########################################")
     
-    # Handel no matches
       
     # Then basicaly do conflict resolution using ChatGPT!
-    # Basic contextual prompt with out any onther information
-    prompt_for_gpt = (
-        f'Answer the question based on the following context:\n'
-        f'{authority_matches}\n'
-        f'Answer the question based on the above context: '
-        f'Find the nearest match to Continent="{continent}", Country="{country}", State/Province="{state_province}", County="{county}"\n'
-        f'Return the matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}\n'
-        f'Do not return newlines in the JSON'
-    )
+    # Basic contextual prompt with out any other information
+    if num_authority_matches != 0:
+        prompt_for_gpt = (
+            f'Answer the question based on the following context:\n'
+            f'{authority_matches}\n'
+            f'Answer the question based on the above context: '
+            f'Find the nearest match to Continent="{continent}", Country="{country}", State/Province="{state_province}", County="{county}"\n'
+            f'Return the nearest matching line together with the irn_eluts number as JSON of structure {{"irn_eluts":"value1", "continent":"value2", "country":"value3", "state_province":"value4", "county":"value5"}}\n'
+            f'Make no comment'
+            f'Do not return newlines in the JSON'
+        )
 
-    #print(prompt_for_gpt)
+        gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt}])
+        gpt_responce_content = gpt_responce.choices[0].message.content
+        gpt_responce_content = cleanup_json(gpt_responce_content)
+    else:
+        gpt_responce_content = "{}"
 
-    gpt_responce = client.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt_for_gpt}])
-
-    gpt_responce_content = gpt_responce.choices[0].message.content
-    gpt_responce_content = cleanup_json(gpt_responce_content)
-
-    # print(gpt_responce_content)
+    print(f"Cleaned up responce content ****{gpt_responce_content}****")
 
     if is_json(gpt_responce_content) and gpt_responce_content != "{}":
         dict_returned = eval(gpt_responce_content) # JSON -> Dict
         dict_returned["irn"] = irn
+        dict_returned["num_authority_matches"] = num_authority_matches
         dict_returned["error"] = "OK"
         dict_returned["query_string"] = query_string
         dict_returned["error_output"] = "NA"
@@ -150,11 +156,11 @@ for index, row in df_transcribed.iterrows():
         else:
             error = "INVALID JSON"  
             
-        print(f"{error}: {gpt_responce}")
+        print(f"{error}")
         dict_returned = dict(empty_output_list)
        
         dict_returned["irn"] = irn
-        
+        dict_returned["num_authority_matches"] = num_authority_matches
         # The origonal input from the transcribed csv
         dict_returned["continent"] = continent
         dict_returned["country"] = country
@@ -163,7 +169,7 @@ for index, row in df_transcribed.iterrows():
         
         dict_returned["error"] = error
         dict_returned["query_string"] = query_string
-        dict_returned["error_output"] = gpt_responce
+        dict_returned["error_output"] = gpt_responce_content
         
     print(f'OUT ****{dict_returned}************************')
 
@@ -177,7 +183,7 @@ for index, row in df_transcribed.iterrows():
     # Just start by making sure something good comes back from Chroma
     # Not too many options - no need for three answers
     # Test with empty - more answers, smaller chunks
-    if count > 60 :break
+    if count >= 60 :break
     
     ###### eo for loop
         
