@@ -29,7 +29,9 @@ input_folder = "ny_hebarium_location_csv_input"
 input_authority_file = "NY_Geopolitical_Lookup_Lists_50000.csv"
 input_authority_path = Path(f"{input_folder}/{input_authority_file}")
 
-input_transcibed_file = "NY_specimens_transcribed.csv" # ###### Note: this is the one that they gave us ######
+# input_transcibed_file = "NY_specimens_transcribed.csv" # ###### Note: this is the one that they gave us ######
+input_transcibed_file = "ny_hebarium_2024-06-09T19-11-00-1001.csv"
+
 input_transcibed_path = Path(f"{input_folder}/{input_transcibed_file}")
 
 output_folder = "ny_hebarium_location_csv_output"
@@ -67,20 +69,25 @@ for index, row in df_transcribed.iterrows():
     count+=1
     print(f"\n{count=}")
     
-    irn = str(row["irn"])
+    # But my OCRed csv lines don't have an irn - must copy irn across
+    irn = str(row["irn"]) 
+    
+    
     continent = str(row["DarContinent"])
     country = str(row["DarCountry"])
     state_province = str(row["DarStateProvince"])
     county = str(row["DarCounty"])
+    
     locality_info = str(row["DarLocality"])
 
     print(f"{irn} {continent} {country} {state_province} {county} ")
 
-    if continent == "nan" : continent = ""
-    if country == "nan": country = ""
-    if state_province == "nan" : state_province = ""   
-    if county == "nan" : county = ""
-    if locality_info == "nan" : locality_info = "" 
+    if continent == "nan" or continent == "none": continent = ""
+    if country == "nan" or country == "none": country = ""
+    if state_province == "nan" or state_province == "none": state_province = ""   
+    if county == "nan" or county == "none": county = ""
+    
+    if locality_info == "nan" or locality_info == "none": locality_info = "" 
 
     print(f"{irn} {continent} {country} {state_province} {county} ")
 
@@ -97,6 +104,11 @@ for index, row in df_transcribed.iterrows():
     query_string = query_string[open_bracket_index:]
     
     print(f"query_string for authority file: ****'{query_string}'****")
+    
+    # Sometimes a specimen fails to transcribe - INVALID JSON or whatever
+    # In this case Continent Country stateProvince County will be none none none none
+    # and the query_string will be empty
+    
     
     authority_matches = df_authority.query(query_string)
     print(f"Number of matches in authority file: {len(authority_matches)}")

@@ -62,6 +62,15 @@ def clean_up_ocr_output_json_content(ocr_output_in):
     return json_returned
 
 def cleanup_json(json_returned):
+  
+    # HERE I DEAL WITH SOME FORMATS THAT CREATE INVALID JSON
+    # 1) Turn to raw with "r" to avoid the escaping quotes problem
+    json_returned = fr'{json_returned}'
+    
+    # 2) Sometimes null still gets returned, even though I asked it not to
+    if "null" in json_returned: 
+      json_returned = json_returned.replace("null", "'none'")
+  
     # Occasionaly the whole of the otherwise valid JSON is returned with surrounding square brackets like '[{"text":"tim"}]'
     # or other odd things like markup '''json and ''' etc.
     # This removes everything prior to the opening "{" and after the closeing "}"
