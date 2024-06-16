@@ -30,7 +30,7 @@ input_authority_file = "NY_Geopolitical_Lookup_Lists_50000.csv"
 input_authority_path = Path(f"{input_folder}/{input_authority_file}")
 
 # input_transcibed_file = "NY_specimens_transcribed.csv" # ###### Note: this is the one that they gave us ######
-input_transcibed_file = "ny_hebarium_2024-06-09T19-11-00-1001.csv"
+input_transcibed_file = "ny_hebarium_improvement_2024-06-15T23-40-20-1001-ALL.csv"
 
 input_transcibed_path = Path(f"{input_folder}/{input_transcibed_file}")
 
@@ -94,10 +94,22 @@ for index, row in df_transcribed.iterrows():
     # Search Authority for match(s) with Transcribed line
     # Not sure what to do about "like", i.e. partial matches
     query_string = f""
+    
+    
+    """
     if continent != "": query_string = f'(Continent == "{continent}")'
     if country != "": query_string = f'{query_string} and (Country == "{country}")'
     if state_province != "": query_string = f'{query_string} and (stateProvince == "{state_province}")'
     if county != "": query_string = f'{query_string} and (County == "{county}")'
+    """
+    
+    
+    
+    if continent != "": query_string = f'(Continent == "{continent}")'
+    if country != "": query_string = f'{query_string} and (Country == "{country}")'
+    if state_province != "": query_string = f'{query_string} and (stateProvince == "{state_province}")'
+    if county != "": query_string = f'{query_string} and (County.str.contains("{county}"))'    # This does actualy fix a few - with no side effects
+    
     
     # Case of a spare "and" at the front
     open_bracket_index = query_string.find("(")

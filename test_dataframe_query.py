@@ -76,10 +76,13 @@ print(result)
 result = df_authority.query("stateProvince.notnull()", engine="python")
 # print(result)
 
+
 # "like" is not supported as a keyword so we use col.str.contains()"pattern")
-result = df_authority.query("County.str.contains('Bikita Distr.')")
-"""
+result = df_authority.query("County.str.contains('Bikita')")
 print(result)
+
+"""
+
     irn_eluts Continent   Country stateProvince         County
 10     372354    Africa  Zimbabwe      Masvingo  Bikita Distr.
 """
@@ -92,7 +95,7 @@ print(result)
 """
 
 result = df_authority.query("County.str.contains('ikita')")
-print(result)
+# print(result)
 """
        irn_eluts Continent   Country stateProvince         County
 10        372354    Africa  Zimbabwe      Masvingo  Bikita Distr.
