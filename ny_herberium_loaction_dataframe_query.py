@@ -1,6 +1,6 @@
 """
 
-    File : ny_dataframe_query.py
+    File : ny_herberium_location_dataframe_query.py
 
     Author: Tim Schofield
     Date: 12 June 2024
@@ -23,7 +23,7 @@ MODEL = "gpt-4o" # Context window of 128k max_tokens 4096
 project_name = "ny_geo_authority_DATAFRAME"
 
 # The file to be compared against the authority database
-input_folder = "ny_hebarium_location_csv_input"
+input_folder = "ny_herbarium_location_csv_input"
 
 
 input_authority_file = "NY_Geopolitical_Lookup_Lists_50000.csv"
@@ -34,7 +34,7 @@ input_transcibed_file = "ny_hebarium_improvement_2024-06-15T23-40-20-1001-ALL.cs
 
 input_transcibed_path = Path(f"{input_folder}/{input_transcibed_file}")
 
-output_folder = "ny_hebarium_location_csv_output"
+output_folder = "ny_herbarium_location_csv_output"
 
 batch_size = 20 # saves every
 time_stamp = get_file_timestamp()

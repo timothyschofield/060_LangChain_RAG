@@ -4,7 +4,7 @@ chroma/
 data/
 ny_collectors_csv_input/
 ny_collectors_csv_output/
-ny_hebarium_location_csv_input/
-ny_hebarium_location_csv_output/
+ny_herbarium_location_csv_input/
+ny_herbarium_location_csv_output/
 .env
 
